@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>eBay Listing Tool</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f0f0f0;color:#333}
+.hdr{background:#e53238;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.hdr h1{font-size:1.05rem;font-weight:700}
+.hdr-sub{font-size:.72rem;opacity:.8}
+.hdr-right{display:flex;gap:8px}
+.hdr-btn{padding:7px 14px;border-radius:20px;font-size:.78rem;font-weight:700;cursor:pointer;border:2px solid rgba(255,255,255,.5);color:#fff;background:transparent;transition:.2s}
+.hdr-btn:hover{background:rgba(255,255,255,.15)}
+.hdr-btn.active{background:#fff;color:#e53238;border-color:#fff}
+.wrap{max-width:900px;margin:0 auto;padding:20px}
+.page{display:none}.page.active{display:block}
+.section{background:#fff;border-radius:11px;margin-bottom:18px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden}
+.section-hdr{background:#fafafa;border-bottom:1px solid #eee;padding:13px 18px;display:flex;align-items:center;justify-content:space-between}
+.section-hdr h3{font-size:.88rem;font-weight:700;color:#333}
+.section-body{padding:18px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.fg4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.full{grid-column:1/-1}
+label{font-size:.78rem;font-weight:600;color:#555;display:block;margin-bottom:3px}
+input[type=text],input[type=number],input[type=password],input[type=date],input[type=time],select,textarea{width:100%;padding:8px 11px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:.85rem;font-family:inherit;transition:.15s;background:#fff;color:#333}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#e53238;box-shadow:0 0 0 3px rgba(229,50,56,.08)}
+textarea{resize:vertical}
+.char-wrap{position:relative}
+.char-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:.72rem;font-weight:700;pointer-events:none}
+.cc-ok{color:#3a86ff}.cc-warn{color:#f4a261}.cc-over{color:#e53238}
+.char-bar{height:3px;border-radius:2px;background:#eee;margin-top:4px}
+.char-fill{height:100%;border-radius:2px;transition:.3s}
+
+/* PHOTOS */
+.photo-zone{border-radius:10px;padding:14px;margin-bottom:16px}
+.photo-zone.ai-zone{background:#fff8f5;border:1.5px solid #ffd0b0}
+.photo-zone.listing-zone{background:#f8f8f8;border:1.5px solid #e0e0e0}
+.zone-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.zone-title{font-size:.85rem;font-weight:700;color:#333}
+.zone-sub{font-size:.72rem;color:#aaa;margin-top:2px}
+.zone-count{font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px}
+.ai-count{color:#e53238;background:#ffe0e0}
+.listing-count{color:#555;background:#e8e8e8}
+.drop-zone{border:2px dashed #ddd;border-radius:10px;padding:22px;text-align:center;cursor:pointer;transition:.2s;background:#fff}
+.drop-zone:hover,.drop-zone.drag{border-color:#e53238;background:#fff5f5}
+.photo-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;min-height:0}
+.photo-thumb{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:2px solid #e0e0e0;flex-shrink:0;cursor:grab;transition:transform .15s,box-shadow .15s}
+.photo-thumb:active{cursor:grabbing}
+.photo-thumb.main-photo{border-color:#e53238;border-width:3px}
+.photo-thumb.dragging{opacity:.4;transform:scale(.95)}
+.photo-thumb.drag-over{box-shadow:4px 0 0 0 #e53238;transform:scale(1.05)}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+.main-badge{position:absolute;bottom:3px;left:3px;background:#e53238;color:#fff;font-size:.58rem;font-weight:700;padding:2px 5px;border-radius:3px;pointer-events:none}
+.rm-btn{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:19px;height:19px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center}
+.photo-hint{font-size:.72rem;color:#aaa;margin-top:6px;text-align:center;display:none}
+.photo-hint.show{display:block}
+
+.spec-divider{font-size:.75rem;font-weight:700;color:#e53238;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid #f5f5f5}
+.req-tag{font-size:.62rem;background:#ffe0e0;color:#e53238;padding:1px 5px;border-radius:3px;font-weight:700}
+.vol-tag{font-size:.68rem;color:#3a86ff;font-weight:500}
+.trend-tag{font-size:.68rem;color:#e53238;font-weight:600}
+.spec-field label{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+.tog-label{font-size:.85rem;font-weight:600;color:#333}
+.tog-sub{font-size:.75rem;color:#888;margin-top:1px}
+.switch{position:relative;width:40px;height:22px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#ccc;border-radius:22px;cursor:pointer;transition:.3s}
+.slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+input:checked+.slider{background:#e53238}
+input:checked+.slider:before{transform:translateX(18px)}
+.promo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.promo-card{border:2px solid #eee;border-radius:9px;padding:14px;transition:.2s}
+.promo-card.on{border-color:#e53238;background:#fffafa}
+.promo-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.promo-rate-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.promo-rate-row input{width:65px}
+.suggested-rate{font-size:.72rem;color:#3a86ff;margin-top:4px}
+.promo-notice{background:#fff3e0;border:1px solid #ffe0b2;border-radius:8px;padding:10px 14px;font-size:.82rem;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.big-pct{font-size:1.3rem;font-weight:700;color:#e53238}
+.price-rec{background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:10px 14px;font-size:.82rem;margin-top:10px}
+.price-rec-row{display:flex;justify-content:space-between;margin-bottom:3px}
+.price-rec-row span:last-child{font-weight:700}
+.dims-row{display:flex;align-items:center;gap:6px}
+.dims-row input{width:60px}
+.dims-sep{color:#aaa;font-size:.85rem}
+.offer-box{background:#f0fff4;border:1px solid #c3e6cb;border-radius:8px;padding:14px;margin-top:10px}
+.sched-box{background:#f0f7ff;border:1px solid #b8d4f0;border-radius:8px;padding:14px;margin-top:10px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border:none;border-radius:8px;font-size:.88rem;font-weight:700;cursor:pointer;transition:.2s}
+.btn-red{background:#e53238;color:#fff}.btn-red:hover{background:#c0272d}
+.btn-red:disabled{background:#ccc;cursor:not-allowed}
+.btn-grey{background:#efefef;color:#444}.btn-grey:hover{background:#e0e0e0}
+.btn-green{background:#28a745;color:#fff;font-size:.95rem;padding:13px 28px;border-radius:9px;width:100%;justify-content:center}
+.btn-green:hover{background:#218838}
+.btn-green:disabled{background:#ccc;cursor:not-allowed}
+.ai-bar{background:linear-gradient(135deg,#fff8f0,#fff0f0);border:1.5px solid #ffd0b0;border-radius:11px;padding:16px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.ai-bar-text h3{font-size:.95rem;font-weight:700;color:#333;margin-bottom:3px}
+.ai-bar-text p{font-size:.78rem;color:#888}
+.ai-bar-btns{display:flex;gap:8px;flex-wrap:wrap}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.status{padding:10px 14px;border-radius:8px;font-size:.83rem;margin-bottom:16px;display:none}
+.status.show{display:block}
+.status.info{background:#e8f4fd;border-left:4px solid #3a86ff;color:#1a5276}
+.status.success{background:#d4edda;border-left:4px solid #28a745;color:#155724}
+.status.error{background:#f8d7da;border-left:4px solid #e53238;color:#721c24}
+.list-footer{background:#fff;border-radius:11px;padding:22px;box-shadow:0 1px 4px rgba(0,0,0,.08);text-align:center;margin-bottom:30px}
+.list-footer-btns{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.key-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.key-row input{flex:1}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.dot.g{background:#28a745}.dot.r{background:#dc3545}
+.save-sm{padding:7px 14px;background:#e53238;color:#fff;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-size:.8rem;white-space:nowrap}
+.save-sm:hover{background:#c0272d}
+.empty-specs{text-align:center;padding:30px;color:#bbb;font-size:.85rem}
+.cat-badge{display:inline-block;background:#e8f4fd;color:#1a5276;font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:8px}
+@media(max-width:620px){.fg,.fg3,.fg4,.promo-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.fg,.fg3,.fg4,.promo-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div><h1>🏷️ eBay Listing Tool</h1><div class="hdr-sub">Clothing &amp; Shoes · Lafayette, IN · 30-Day Returns</div></div>
+  <div class="hdr-right">
+    <button class="hdr-btn active" id="btn-create" onclick="showPage('create',this)">✏️ Create</button>
+    <button class="hdr-btn" id="btn-settings" onclick="showPage('settings',this)">⚙️ Settings</button>
+  </div>
+</div>
+
+<!-- CREATE -->
+<div class="page active" id="page-create">
+<div class="wrap">
+  <div id="statusBar" class="status"></div>
+
+  <div class="ai-bar">
+    <div class="ai-bar-text">
+      <h3>🤖 AI Photo Analysis</h3>
+      <p>Upload photos, click Generate — AI detects category and fills every field automatically.</p>
+    </div>
+    <div class="ai-bar-btns">
+      <button class="btn btn-red" id="genBtn" onclick="generateListing()"><span>✨ Generate Listing</span></button>
+      <button class="btn btn-grey" onclick="loadTestData()">🧪 Test</button>
+      <button class="btn btn-grey" onclick="testConnection()">🔌 Test API</button>
+    </div>
+  </div>
+
+  <!-- PHOTOS -->
+  <div class="section">
+    <div class="section-hdr"><h3>📸 Photos</h3><span style="font-size:.75rem;color:#aaa">Up to 24 total · First AI photo = Main</span></div>
+    <div class="section-body">
+
+      <!-- AI PHOTOS -->
+      <div class="photo-zone ai-zone">
+        <div class="zone-hdr">
+          <div>
+            <div class="zone-title">🤖 AI Analysis Only — Not Uploaded to eBay</div>
+            <div class="zone-sub">Drag tag &amp; detail shots here · AI reads these to generate your listing</div>
+          </div>
+          <span class="zone-count ai-count" id="aiPhotoCount">0 photos</span>
+        </div>
+        <div class="drop-zone" id="dz_ai"
+          onclick="document.getElementById('fi_ai').click()"
+          ondragover="dzOn(event,'dz_ai')"
+          ondragleave="dzOff(event,'dz_ai')"
+          ondrop="dzDropZone(event,'ai')">
+          <div style="font-size:1.4rem;margin-bottom:4px">🤖</div>
+          <div style="color:#999;font-size:.83rem">Drag &amp; drop or <strong style="color:#e53238">click to browse</strong></div>
+          <div style="font-size:.72rem;color:#bbb;margin-top:3px">Brand tag · Size tag · Care tag · Front · Flaws</div>
+        </div>
+        <input type="file" id="fi_ai" multiple accept="image/*" style="display:none" onchange="addPhotos(this.files,'ai')"/>
+        <div class="photo-grid" id="photoGrid_ai"></div>
+        <div class="photo-hint" id="photoHint_ai">🖐️ Drag to reorder · First = Main listing image</div>
+      </div>
+
+      <!-- LISTING PHOTOS -->
+      <div class="photo-zone listing-zone">
+        <div class="zone-hdr">
+          <div>
+            <div class="zone-title">📸 eBay Listing Photos — Uploaded in This Order</div>
+            <div class="zone-sub">These are the ONLY photos sent to eBay · Arrange them exactly how you want</div>
+          </div>
+          <span class="zone-count listing-count" id="listingPhotoCount">0 photos</span>
+        </div>
+        <div class="drop-zone" id="dz_listing"
+          onclick="document.getElementById('fi_listing').click()"
+          ondragover="dzOn(event,'dz_listing')"
+          ondragleave="dzOff(event,'dz_listing')"
+          ondrop="dzDropZone(event,'listing')">
+          <div style="font-size:1.4rem;margin-bottom:4px">📸</div>
+          <div style="color:#999;font-size:.83rem">Drag &amp; drop or <strong style="color:#555">click to browse</strong></div>
+          <div style="font-size:.72rem;color:#bbb;margin-top:3px">Extra angles · Measurements · Stock number</div>
+        </div>
+        <input type="file" id="fi_listing" multiple accept="image/*" style="display:none" onchange="addPhotos(this.files,'listing')"/>
+        <div class="photo-grid" id="photoGrid_listing"></div>
+        <div class="photo-hint" id="photoHint_listing">🖐️ Drag to reorder</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TITLE -->
+  <div class="section">
+    <div class="section-hdr"><h3>🏷️ Title</h3></div>
+    <div class="section-body">
+      <label>Item Title</label>
+      <div class="char-wrap">
+        <input type="text" id="f_title" maxlength="90" placeholder="AI will generate your optimized title" oninput="titleCC()" style="padding-right:55px"/>
+        <span class="char-badge cc-ok" id="titleBadge">0/80</span>
+      </div>
+      <div class="char-bar"><div class="char-fill" id="titleFill" style="width:0%;background:#3a86ff"></div></div>
+      <div class="fg" style="margin-top:12px">
+        <div><label>Custom Label / SKU <span style="font-weight:400;color:#bbb">(optional)</span></label><input type="text" id="f_sku" placeholder="Your internal SKU" maxlength="50"/></div>
+        <div><label>Store Category</label>
+          <select id="f_store_cat"><option>Other</option><option>Tops</option><option>Bottoms</option><option>Outerwear</option><option>Shoes</option><option>Accessories</option></select></div>
+      </div>
+      <div style="margin-top:10px;font-size:.78rem;color:#777;background:#f8f8f8;padding:8px 12px;border-radius:6px">
+        📂 eBay Category: <span id="catText" style="font-weight:600">AI will detect from photos</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ITEM SPECIFICS -->
+  <div class="section">
+    <div class="section-hdr">
+      <h3>📋 Item Specifics <span id="catBadge" class="cat-badge" style="display:none"></span></h3>
+    </div>
+    <div class="section-body">
+      <div id="specsContainer">
+        <div class="empty-specs">📸 Upload photos and click <strong>Generate Listing</strong> — fields appear based on detected category.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONDITION & DESCRIPTION -->
+  <div class="section">
+    <div class="section-hdr"><h3>🔍 Condition &amp; Description</h3></div>
+    <div class="section-body">
+      <div class="fg" style="margin-bottom:14px">
+        <div><label>Item Condition</label>
+          <select id="f_condition">
+            <option value="">Select condition</option>
+            <option>New with tags</option><option>New without tags</option>
+            <option>Pre-owned - Excellent</option><option>Pre-owned - Good</option><option>Pre-owned - Fair</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label>Condition Description <span style="font-weight:400;color:#bbb;font-size:.7rem">(1000 char max)</span></label>
+        <textarea id="f_cond_desc" rows="3" maxlength="1000" oninput="cc(this,'condCC')"></textarea>
+        <div style="font-size:.72rem;color:#aaa;text-align:right;margin-top:2px"><span id="condCC">0</span>/1000</div>
+      </div>
+      <div>
+        <label>Description</label>
+        <textarea id="f_desc" rows="7" maxlength="5000" oninput="cc(this,'descCC')"></textarea>
+        <div style="font-size:.72rem;color:#aaa;text-align:right;margin-top:2px"><span id="descCC">0</span>/5000</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRICING -->
+  <div class="section">
+    <div class="section-hdr"><h3>💰 Pricing</h3></div>
+    <div class="section-body">
+      <div class="fg4">
+        <div><label>Format</label><select id="f_format"><option>Buy It Now</option><option>Auction</option></select></div>
+        <div><label>Item Price ($)</label><input type="number" id="f_price" placeholder="0.00" step="0.01" min="0"/></div>
+        <div><label>Your Cost ($) <span style="font-weight:400;color:#bbb;font-size:.7rem">Hidden</span></label><input type="number" id="f_cost" placeholder="0.00" step="0.01" min="0"/></div>
+        <div><label>Quantity</label><input type="number" id="f_qty" value="1" min="1"/></div>
+      </div>
+      <div class="price-rec" id="priceRec" style="display:none">
+        <div style="font-size:.78rem;font-weight:700;color:#555;margin-bottom:6px">📊 Sold Listings · Last 90 Days</div>
+        <div class="price-rec-row"><span>Recommended price</span><span id="recPrice">—</span></div>
+      </div>
+      <div style="border-top:1px solid #f0f0f0;margin-top:14px;padding-top:12px">
+        <div class="tog-row">
+          <div><div class="tog-label">Allow Offers</div><div class="tog-sub">Buyers can send an offer — accept, counter, or decline</div></div>
+          <label class="switch"><input type="checkbox" id="f_offers" onchange="document.getElementById('offersBox').style.display=this.checked?'block':'none'"/><span class="slider"></span></label>
+        </div>
+        <div id="offersBox" style="display:none" class="offer-box">
+          <div class="fg">
+            <div><label>Minimum Offer ($)</label><input type="number" id="f_min_offer" placeholder="e.g. 20.00" step="0.01"/></div>
+            <div><label>Auto-Accept ($)</label><input type="number" id="f_auto_accept" placeholder="e.g. 25.00" step="0.01"/></div>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid #f0f0f0;margin-top:10px;padding-top:10px">
+        <div class="tog-row">
+          <div><div class="tog-label">Schedule Listing</div><div class="tog-sub">Goes live immediately unless a time is set</div></div>
+          <label class="switch"><input type="checkbox" id="f_schedule" onchange="document.getElementById('schedBox').style.display=this.checked?'block':'none'"/><span class="slider"></span></label>
+        </div>
+        <div id="schedBox" style="display:none" class="sched-box">
+          <div class="fg">
+            <div><label>Date</label><input type="date" id="f_sched_date"/></div>
+            <div><label>Time</label><input type="time" id="f_sched_time"/></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHIPPING -->
+  <div class="section">
+    <div class="section-hdr"><h3>📦 Shipping</h3></div>
+    <div class="section-body">
+      <div class="fg3" style="margin-bottom:12px">
+        <div><label>Carrier</label>
+          <select id="f_carrier" onchange="updateShipLabel()"><option>USPS Ground Advantage</option><option>USPS Priority Mail</option><option>UPS Ground</option><option>FedEx Ground</option></select></div>
+        <div><label>Flat Rate Cost ($)</label><input type="number" id="f_ship_cost" value="6.50" step="0.01" min="0" oninput="updateShipLabel()"/></div>
+        <div><label>Handling Time</label>
+          <select id="f_handling" onchange="updateShipLabel()"><option>1 Business Day</option><option>2 Business Days</option><option>3 Business Days</option></select></div>
+      </div>
+      <div style="background:#f0f7ff;border:1px solid #b8d4f0;border-radius:8px;padding:10px 14px;font-size:.82rem;margin-bottom:14px" id="shipLabel">
+        🚚 <strong>USPS Ground Advantage</strong> · $6.50 flat rate · 1 Business Day handling
+      </div>
+      <div class="fg" style="margin-bottom:12px">
+        <div><label>Package Weight</label>
+          <div style="display:flex;gap:6px"><input type="number" id="f_wt_lbs" placeholder="lbs" min="0" style="width:50%"/><input type="number" id="f_wt_oz" placeholder="oz" min="0" style="width:50%"/></div></div>
+        <div><label>Dimensions (L × W × H inches)</label>
+          <div class="dims-row"><input type="number" id="f_dl" placeholder="L" min="0"/><span class="dims-sep">×</span><input type="number" id="f_dw" placeholder="W" min="0"/><span class="dims-sep">×</span><input type="number" id="f_dh" placeholder="H" min="0"/></div></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:.83rem;cursor:pointer;margin-bottom:14px"><input type="checkbox" id="f_irregular"/> Irregular package</label>
+      <div class="tog-row" style="border-top:1px solid #f0f0f0;padding-top:12px">
+        <div><div class="tog-label">eBay International Shipping</div><div class="tog-sub">Ship to domestic hub — eBay handles customs &amp; returns at no extra cost</div></div>
+        <label class="switch"><input type="checkbox" id="f_intl" checked/><span class="slider"></span></label>
+      </div>
+      <div style="margin-top:14px;border-top:1px solid #f0f0f0;padding-top:14px">
+        <label>Country of Origin <span style="font-weight:400;color:#bbb;font-size:.72rem">(AI reads from tag)</span></label>
+        <input type="text" id="f_item_origin" placeholder="e.g. Vietnam, China, USA" style="margin-top:3px"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROMOTE -->
+  <div class="section">
+    <div class="section-hdr"><h3>📣 Promote Your Listing</h3></div>
+    <div class="section-body">
+      <div class="promo-notice">
+        <div class="big-pct">80%</div>
+        <div><strong>of items in this category are promoted right now.</strong><br><span style="font-size:.75rem;color:#888">Stay competitive by promoting your listing.</span></div>
+      </div>
+      <div class="promo-grid">
+        <div class="promo-card on" id="promoGenCard">
+          <div class="promo-card-hdr"><h4>General</h4><label class="switch"><input type="checkbox" id="f_promo_gen" checked onchange="togglePromoGen()"/><span class="slider"></span></label></div>
+          <p style="font-size:.78rem;color:#777">Pay a % of final sale only when item sells.</p>
+          <div id="promoGenBody">
+            <div class="promo-rate-row"><input type="number" id="f_promo_pct" value="5" min="1" max="100" step="0.1"/><span style="font-size:.88rem;font-weight:700">%</span><span style="font-size:.78rem;color:#888">ad rate</span></div>
+            <div class="suggested-rate">Suggested rate: 11.9%</div>
+          </div>
+        </div>
+        <div class="promo-card" id="promoPriCard">
+          <div class="promo-card-hdr"><h4>Priority</h4><label class="switch"><input type="checkbox" id="f_promo_pri" onchange="document.getElementById('promoPriCard').classList.toggle('on',this.checked)"/><span class="slider"></span></label></div>
+          <p style="font-size:.78rem;color:#777;margin-bottom:6px">170% more visibility on average.</p>
+          <ul style="font-size:.76rem;color:#555;padding-left:14px;line-height:1.9"><li>Top of search</li><li>Advanced targeting</li><li>Pay per click only</li></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div class="list-footer">
+    <p style="font-size:.85rem;color:#777;margin-bottom:14px">Review everything above, then post your listing to eBay.</p>
+    <button class="btn btn-green" id="listBtn" onclick="postToEbay()" disabled>🚀 List on eBay</button>
+    <div style="font-size:.72rem;color:#aaa;margin-top:6px" id="listNote">eBay API token required to post</div>
+    <div class="list-footer-btns">
+      <button class="btn btn-grey" onclick="copyListing()">📋 Copy Listing Text</button>
+      <button class="btn btn-grey" onclick="resetAll()">🔄 New Listing</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-settings">
+<div class="wrap">
+  <div class="section"><div class="section-hdr"><h3>🤖 Anthropic API Key</h3></div><div class="section-body">
+    <div class="key-row"><div class="dot" id="dot_anth"></div><input type="password" id="s_anth" placeholder="sk-ant-..."/><button class="save-sm" onclick="saveKey('anth')">Save</button></div>
+    <p style="font-size:.75rem;color:#888">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></p>
+  </div></div>
+  <div class="section"><div class="section-hdr"><h3>🛒 eBay API Keys</h3></div><div class="section-body">
+    <label style="margin-bottom:4px">Client ID</label>
+    <div class="key-row"><div class="dot" id="dot_eid"></div><input type="password" id="s_eid" placeholder="eBay Client ID"/><button class="save-sm" onclick="saveKey('eid')">Save</button></div>
+    <label style="margin-bottom:4px">Client Secret</label>
+    <div class="key-row"><div class="dot" id="dot_esec"></div><input type="password" id="s_esec" placeholder="eBay Client Secret"/><button class="save-sm" onclick="saveKey('esec')">Save</button></div>
+    <label style="margin-bottom:4px">OAuth User Token</label>
+    <div class="key-row"><div class="dot" id="dot_etok"></div><input type="password" id="s_etok" placeholder="Generated after OAuth flow"/><button class="save-sm" onclick="saveKey('etok')">Save</button></div>
+    <p style="font-size:.75rem;color:#888;margin-top:4px">Get keys at <a href="https://developer.ebay.com" target="_blank">developer.ebay.com</a></p>
+  </div></div>
+  <div class="section"><div class="section-hdr"><h3>📦 Defaults</h3></div><div class="section-body">
+    <div class="fg3">
+      <div><label>Default Carrier</label><select id="sd_carrier"><option>USPS Ground Advantage</option><option>USPS Priority Mail</option><option>UPS Ground</option><option>FedEx Ground</option></select></div>
+      <div><label>Default Flat Rate ($)</label><input type="number" id="sd_cost" placeholder="6.50" step="0.01"/></div>
+      <div><label>Default Promo %</label><input type="number" id="sd_promo" placeholder="5" min="1" max="100"/></div>
+      <div><label>Return Policy</label><select id="sd_returns"><option>30-day returns accepted</option><option>60-day returns accepted</option><option>No returns</option></select></div>
+      <div><label>ZIP Code</label><input type="text" id="sd_zip" placeholder="47904"/></div>
+    </div>
+    <button class="save-sm" style="margin-top:14px" onclick="saveDefaults()">Save Defaults</button>
+  </div></div>
+  <div style="text-align:center;margin:20px 0"><button class="btn btn-grey" onclick="showPage('create',document.getElementById('btn-create'))">← Back to Create</button></div>
+</div>
+</div>
+
+<script>
+// ── CATEGORY FIELD DEFINITIONS ──
+const CAT_FIELDS={
+  tops:{
+    label:'Tops (Shirts, Hoodies, Sweaters, Activewear)',
+    required:[
+      {id:'s_brand',label:'Brand',type:'text',tag:'req'},
+      {id:'s_color',label:'Color',type:'text',tag:'req'},
+      {id:'s_dept',label:'Department',type:'select',options:['','Men','Women','Unisex Adults','Boys','Girls'],tag:'req'},
+      {id:'s_size_type',label:'Size Type',type:'select',options:['','Regular','Big & Tall','Petite','Plus','Maternity'],tag:'req'},
+      {id:'s_size',label:'Size',type:'text',tag:'req'},
+      {id:'s_type',label:'Type',type:'select',options:['','Casual','Athletic','Dress','Formal','Workwear'],tag:'req'},
+    ],
+    additional:[
+      {id:'s_style',label:'Style',type:'text',vol:'255.6K searches'},
+      {id:'s_activity',label:'Performance/Activity',type:'text',vol:'135.2K'},
+      {id:'s_features',label:'Features',type:'text',vol:'93.8K'},
+      {id:'s_sleeve_len',label:'Sleeve Length',type:'select',options:['','Short Sleeve','Long Sleeve','Sleeveless','3/4 Sleeve'],vol:'87.3K'},
+      {id:'s_closure',label:'Closure',type:'text',vol:'76.4K'},
+      {id:'s_sleeve_type',label:'Sleeve Type',type:'text',vol:'70.4K'},
+      {id:'s_origin',label:'Country of Origin',type:'text',vol:'61.3K'},
+      {id:'s_neckline',label:'Neckline',type:'text',vol:'55.4K'},
+      {id:'s_material',label:'Material',type:'text',tag:'trend'},
+      {id:'s_pattern',label:'Pattern',type:'text',tag:'trend'},
+      {id:'s_fabric_type',label:'Fabric Type',type:'text',vol:'60.6K'},
+      {id:'s_fit',label:'Fit',type:'select',options:['','Regular','Athletic','Slim','Relaxed','Loose'],vol:'19.3K'},
+      {id:'s_fabric_wash',label:'Fabric Wash',type:'text',vol:'43.1K'},
+      {id:'s_theme',label:'Theme',type:'text',vol:'36.5K'},
+      {id:'s_occasion',label:'Occasion',type:'text',vol:'2.5K'},
+      {id:'s_accents',label:'Accents',type:'text',vol:'2.4K'},
+      {id:'s_season',label:'Season',type:'text',vol:'1K'},
+      {id:'s_collar',label:'Collar Style',type:'text',vol:'240'},
+      {id:'s_care',label:'Garment Care',type:'text'},
+      {id:'s_model',label:'Model',type:'text',vol:'27.4K'},
+      {id:'s_product_line',label:'Product Line',type:'text',vol:'93.2K'},
+      {id:'s_vintage',label:'Vintage',type:'select',options:['','No','Yes']},
+      {id:'s_handmade',label:'Handmade',type:'select',options:['','No','Yes']},
+      {id:'s_upc',label:'UPC',type:'text'},
+    ]
+  },
+  bottoms:{
+    label:'Bottoms (Pants, Jeans, Shorts, Skirts)',
+    required:[
+      {id:'s_brand',label:'Brand',type:'text',tag:'req'},
+      {id:'s_color',label:'Color',type:'text',tag:'req'},
+      {id:'s_dept',label:'Department',type:'select',options:['','Men','Women','Unisex Adults','Boys','Girls'],tag:'req'},
+      {id:'s_size_type',label:'Size Type',type:'select',options:['','Regular','Big & Tall','Petite','Plus','Maternity'],tag:'req'},
+      {id:'s_waist',label:'Waist Size',type:'text',tag:'req'},
+      {id:'s_inseam',label:'Inseam',type:'text',tag:'req'},
+      {id:'s_type',label:'Type',type:'select',options:['','Casual','Athletic','Dress','Formal','Workwear'],tag:'req'},
+    ],
+    additional:[
+      {id:'s_style',label:'Style',type:'text',vol:'255.6K searches'},
+      {id:'s_rise',label:'Rise',type:'select',options:['','Low Rise','Mid Rise','High Rise'],vol:'120K'},
+      {id:'s_leg_style',label:'Leg Style',type:'select',options:['','Straight','Slim','Skinny','Bootcut','Flare','Relaxed','Tapered'],vol:'98K'},
+      {id:'s_closure',label:'Closure',type:'text',vol:'76.4K'},
+      {id:'s_material',label:'Material',type:'text',tag:'trend'},
+      {id:'s_pattern',label:'Pattern',type:'text',tag:'trend'},
+      {id:'s_fit',label:'Fit',type:'select',options:['','Regular','Slim','Relaxed','Athletic','Loose'],vol:'19.3K'},
+      {id:'s_fabric_type',label:'Fabric Type',type:'text',vol:'60.6K'},
+      {id:'s_features',label:'Features',type:'text',vol:'93.8K'},
+      {id:'s_activity',label:'Performance/Activity',type:'text',vol:'135.2K'},
+      {id:'s_origin',label:'Country of Origin',type:'text',vol:'61.3K'},
+      {id:'s_occasion',label:'Occasion',type:'text',vol:'2.5K'},
+      {id:'s_season',label:'Season',type:'text',vol:'1K'},
+      {id:'s_accents',label:'Accents',type:'text',vol:'2.4K'},
+      {id:'s_care',label:'Garment Care',type:'text'},
+      {id:'s_model',label:'Model',type:'text',vol:'27.4K'},
+      {id:'s_vintage',label:'Vintage',type:'select',options:['','No','Yes']},
+      {id:'s_upc',label:'UPC',type:'text'},
+    ]
+  },
+  shoes:{
+    label:'Shoes & Footwear',
+    required:[
+      {id:'s_brand',label:'Brand',type:'text',tag:'req'},
+      {id:'s_color',label:'Color',type:'text',tag:'req'},
+      {id:'s_dept',label:'Department',type:'select',options:['','Men','Women','Unisex Adults','Boys','Girls'],tag:'req'},
+      {id:'s_size',label:'Shoe Size (US)',type:'text',tag:'req'},
+      {id:'s_width',label:'Width',type:'select',options:['','Narrow (AA)','Medium (B/M)','Wide (D/W)','Extra Wide (EE/XW)'],tag:'req'},
+      {id:'s_type',label:'Type',type:'select',options:['','Athletic','Casual','Dress','Boots','Sandals','Slip-On'],tag:'req'},
+    ],
+    additional:[
+      {id:'s_style',label:'Style',type:'text',vol:'255.6K searches'},
+      {id:'s_upper_material',label:'Upper Material',type:'text',vol:'140K'},
+      {id:'s_toe_style',label:'Toe Style',type:'select',options:['','Round Toe','Square Toe','Pointed Toe','Open Toe'],vol:'88K'},
+      {id:'s_heel_type',label:'Heel Type',type:'text',vol:'75K'},
+      {id:'s_heel_height',label:'Heel Height',type:'text',vol:'70K'},
+      {id:'s_closure',label:'Closure',type:'select',options:['','Lace-Up','Slip-On','Velcro','Buckle','Zipper'],vol:'76.4K'},
+      {id:'s_sole_material',label:'Sole Material',type:'text',vol:'60K'},
+      {id:'s_activity',label:'Performance/Activity',type:'text',vol:'135.2K'},
+      {id:'s_features',label:'Features',type:'text',vol:'93.8K'},
+      {id:'s_pattern',label:'Pattern',type:'text',tag:'trend'},
+      {id:'s_origin',label:'Country of Origin',type:'text',vol:'61.3K'},
+      {id:'s_occasion',label:'Occasion',type:'text',vol:'2.5K'},
+      {id:'s_season',label:'Season',type:'text',vol:'1K'},
+      {id:'s_care',label:'Care',type:'text'},
+      {id:'s_model',label:'Model',type:'text',vol:'27.4K'},
+      {id:'s_vintage',label:'Vintage',type:'select',options:['','No','Yes']},
+      {id:'s_upc',label:'UPC',type:'text'},
+    ]
+  },
+  outerwear:{
+    label:'Outerwear (Coats, Jackets, Vests)',
+    required:[
+      {id:'s_brand',label:'Brand',type:'text',tag:'req'},
+      {id:'s_color',label:'Color',type:'text',tag:'req'},
+      {id:'s_dept',label:'Department',type:'select',options:['','Men','Women','Unisex Adults','Boys','Girls'],tag:'req'},
+      {id:'s_size_type',label:'Size Type',type:'select',options:['','Regular','Big & Tall','Petite','Plus'],tag:'req'},
+      {id:'s_size',label:'Size',type:'text',tag:'req'},
+      {id:'s_type',label:'Type',type:'select',options:['','Casual','Athletic','Dress','Formal','Workwear'],tag:'req'},
+    ],
+    additional:[
+      {id:'s_coat_type',label:'Coat/Jacket Type',type:'text',vol:'180K'},
+      {id:'s_closure',label:'Closure',type:'text',vol:'76.4K'},
+      {id:'s_lining',label:'Lining',type:'text',vol:'90K'},
+      {id:'s_hood',label:'Hood',type:'select',options:['','Yes','No','Removable'],vol:'75K'},
+      {id:'s_fill',label:'Fill Material',type:'text',vol:'60K'},
+      {id:'s_material',label:'Shell Material',type:'text',tag:'trend'},
+      {id:'s_pattern',label:'Pattern',type:'text',tag:'trend'},
+      {id:'s_features',label:'Features',type:'text',vol:'93.8K'},
+      {id:'s_fit',label:'Fit',type:'select',options:['','Regular','Slim','Relaxed','Oversized'],vol:'19.3K'},
+      {id:'s_activity',label:'Performance/Activity',type:'text',vol:'135.2K'},
+      {id:'s_origin',label:'Country of Origin',type:'text',vol:'61.3K'},
+      {id:'s_occasion',label:'Occasion',type:'text',vol:'2.5K'},
+      {id:'s_season',label:'Season',type:'text',vol:'1K'},
+      {id:'s_care',label:'Garment Care',type:'text'},
+      {id:'s_model',label:'Model',type:'text',vol:'27.4K'},
+      {id:'s_vintage',label:'Vintage',type:'select',options:['','No','Yes']},
+      {id:'s_upc',label:'UPC',type:'text'},
+    ]
+  },
+  accessories:{
+    label:'Accessories (Hats, Belts, Bags, Scarves)',
+    required:[
+      {id:'s_brand',label:'Brand',type:'text',tag:'req'},
+      {id:'s_color',label:'Color',type:'text',tag:'req'},
+      {id:'s_dept',label:'Department',type:'select',options:['','Men','Women','Unisex Adults','Boys','Girls'],tag:'req'},
+      {id:'s_type',label:'Type',type:'text',tag:'req'},
+      {id:'s_size',label:'Size / One Size',type:'text',tag:'req'},
+    ],
+    additional:[
+      {id:'s_material',label:'Material',type:'text',tag:'trend'},
+      {id:'s_pattern',label:'Pattern',type:'text',tag:'trend'},
+      {id:'s_style',label:'Style',type:'text',vol:'255.6K'},
+      {id:'s_features',label:'Features',type:'text',vol:'93.8K'},
+      {id:'s_occasion',label:'Occasion',type:'text',vol:'2.5K'},
+      {id:'s_season',label:'Season',type:'text',vol:'1K'},
+      {id:'s_accents',label:'Accents',type:'text',vol:'2.4K'},
+      {id:'s_origin',label:'Country of Origin',type:'text',vol:'61.3K'},
+      {id:'s_care',label:'Care',type:'text'},
+      {id:'s_model',label:'Model',type:'text',vol:'27.4K'},
+      {id:'s_vintage',label:'Vintage',type:'select',options:['','No','Yes']},
+      {id:'s_upc',label:'UPC',type:'text'},
+    ]
+  }
+};
+
+function detectCatKey(s){
+  s=(s||'').toLowerCase();
+  if(/jacket|coat|vest|puffer|parka|windbreaker|fleece.*jacket/i.test(s))return 'outerwear';
+  if(/pant|jean|short|skirt|legging|trouser|chino|cargo|jogger|bottom/i.test(s))return 'bottoms';
+  if(/shoe|sneaker|boot|sandal|heel|loafer|oxford|slipper|footwear|mule|clog/i.test(s))return 'shoes';
+  if(/hat|belt|bag|scarf|glove|wallet|purse|backpack|accessory|cap|beanie/i.test(s))return 'accessories';
+  return 'tops';
+}
+
+function renderSpecs(catKey,values){
+  const def=CAT_FIELDS[catKey];
+  if(!def){document.getElementById('specsContainer').innerHTML='<div class="empty-specs">Category not recognized.</div>';return;}
+  const badge=document.getElementById('catBadge');
+  badge.textContent=def.label;badge.style.display='inline-block';
+  let html=`<div class="spec-divider">Required <span class="req-tag">Must fill</span></div><div class="fg3">`;
+  def.required.forEach(f=>{html+=`<div class="spec-field"><label>${f.label} <span class="req-tag">Required</span></label>${fieldInput(f,values)}</div>`;});
+  html+=`</div><div class="spec-divider" style="margin-top:18px">Additional <span style="font-weight:400;color:#aaa;font-size:.72rem;text-transform:none">— Improves search visibility</span></div><div class="fg3">`;
+  def.additional.forEach(f=>{
+    const tag=f.tag==='trend'?`<span class="trend-tag">Trending</span>`:f.vol?`<span class="vol-tag">${f.vol}</span>`:'';
+    html+=`<div class="spec-field"><label>${f.label} ${tag}</label>${fieldInput(f,values)}</div>`;
+  });
+  html+=`</div>`;
+  document.getElementById('specsContainer').innerHTML=html;
+}
+
+function fieldInput(f,values){
+  const val=(values&&values[f.id])?values[f.id]:'';
+  if(f.type==='select'){
+    const opts=f.options.map(o=>`<option value="${o}"${o===val?' selected':''}>${o||'Select'}</option>`).join('');
+    return `<select id="${f.id}">${opts}</select>`;
+  }
+  return `<input type="text" id="${f.id}" value="${escHtml(val)}" placeholder=""/>`;
+}
+
+function escHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── PHOTOS ──
+let photosAI=[], photosListing=[];
+
+function dzOn(e,id){e.preventDefault();document.getElementById(id).classList.add('drag');}
+function dzOff(e,id){e.preventDefault();document.getElementById(id).classList.remove('drag');}
+// drop onto the empty drop zone (cross-zone copy or new file upload)
+function dzDropZone(e,zone){
+  e.preventDefault();
+  document.getElementById('dz_'+zone).classList.remove('drag');
+  // if dragging from the other zone, copy the photo over
+  if(dragIdx!==null&&dragZone!==null&&dragZone!==zone){
+    const srcArr=dragZone==='ai'?photosAI:photosListing;
+    const tgtArr=zone==='ai'?photosAI:photosListing;
+    tgtArr.push({...srcArr[dragIdx]});
+    dragIdx=null;dragZone=null;
+    renderPhotos('ai');renderPhotos('listing');
+    return;
+  }
+  // otherwise treat as a file drop
+  addPhotos(e.dataTransfer.files,zone);
+}
+
+function dzDrop(e,zone){
+  e.preventDefault();
+  document.getElementById('dz_'+zone).classList.remove('drag');
+  addPhotos(e.dataTransfer.files,zone);
+}
+
+function addPhotos(files,zone){
+  const arr=zone==='ai'?photosAI:photosListing;
+  [...files].forEach(f=>{
+    if(photosAI.length+photosListing.length>=24)return;
+    const r=new FileReader();
+    r.onload=ev=>{arr.push({file:f,dataUrl:ev.target.result});renderPhotos(zone);};
+    r.readAsDataURL(f);
+  });
+}
+
+function removePhoto(i,zone){
+  if(zone==='ai')photosAI.splice(i,1);
+  else photosListing.splice(i,1);
+  renderPhotos(zone);
+}
+
+function renderPhotos(zone){
+  const arr=zone==='ai'?photosAI:photosListing;
+  const grid=document.getElementById('photoGrid_'+zone);
+  const hint=document.getElementById('photoHint_'+zone);
+  const countEl=document.getElementById(zone==='ai'?'aiPhotoCount':'listingPhotoCount');
+  grid.innerHTML=arr.map((p,i)=>`
+    <div class="photo-thumb${zone==='ai'&&i===0?' main-photo':''}"
+      draggable="true"
+      ondragstart="dragStart(event,${i},'${zone}')"
+      ondragover="dragOver(event,${i},'${zone}')"
+      ondragleave="dragLeave(event)"
+      ondrop="dragDrop(event,${i},'${zone}')"
+      ondragend="dragEnd(event)">
+      <img src="${p.dataUrl}"/>
+      ${zone==='ai'&&i===0?'<div class="main-badge">Main</div>':''}
+      <button class="rm-btn" onclick="removePhoto(${i},'${zone}')">✕</button>
+    </div>`).join('');
+  hint.classList.toggle('show',arr.length>1);
+  countEl.textContent=arr.length+' photo'+(arr.length!==1?'s':'');
+}
+
+let dragIdx=null, dragZone=null;
+function dragStart(e,i,zone){dragIdx=i;dragZone=zone;setTimeout(()=>e.target.classList.add('dragging'),0);}
+function dragOver(e,i,zone){
+  e.preventDefault();
+  if(i===dragIdx&&zone===dragZone)return;
+  document.querySelectorAll('#photoGrid_'+zone+' .photo-thumb').forEach((t,idx)=>t.classList.toggle('drag-over',idx===i));
+}
+function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
+function dragDrop(e,i,zone){
+  e.preventDefault();
+  document.querySelectorAll('.photo-thumb').forEach(t=>t.classList.remove('drag-over'));
+  if(dragIdx===null)return;
+
+  // cross-zone: copy photo into target zone
+  if(dragZone!==zone){
+    const srcArr=dragZone==='ai'?photosAI:photosListing;
+    const tgtArr=zone==='ai'?photosAI:photosListing;
+    const copy={...srcArr[dragIdx]};
+    tgtArr.splice(i,0,copy);
+    dragIdx=null;dragZone=null;
+    renderPhotos('ai');renderPhotos('listing');
+    return;
+  }
+
+  // same zone: reorder
+  if(dragIdx===i)return;
+  const arr=zone==='ai'?photosAI:photosListing;
+  const moved=arr.splice(dragIdx,1)[0];
+  arr.splice(i,0,moved);
+  dragIdx=null;dragZone=null;
+  renderPhotos(zone);
+}
+function dragEnd(e){
+  e.target.classList.remove('dragging');
+  document.querySelectorAll('.photo-thumb').forEach(t=>t.classList.remove('drag-over'));
+  dragIdx=null;dragZone=null;
+}
+
+// ── HELPERS ──
+function titleCC(){
+  const n=document.getElementById('f_title').value.length,b=document.getElementById('titleBadge'),f=document.getElementById('titleFill');
+  b.textContent=n+'/80';f.style.width=Math.min(n/80*100,100)+'%';
+  if(n<=65){b.className='char-badge cc-ok';f.style.background='#3a86ff';}
+  else if(n<=80){b.className='char-badge cc-warn';f.style.background='#f4a261';}
+  else{b.className='char-badge cc-over';f.style.background='#e53238';}
+}
+function cc(el,cid){document.getElementById(cid).textContent=el.value.length;}
+function ccu(cid,val){document.getElementById(cid).textContent=(val||'').length;}
+function sv(id,v){if(v===undefined||v===null||v==='')return;const el=document.getElementById(id);if(el)el.value=v;}
+function updateShipLabel(){
+  const c=document.getElementById('f_carrier').value,cost=parseFloat(document.getElementById('f_ship_cost').value||0).toFixed(2),h=document.getElementById('f_handling').value;
+  document.getElementById('shipLabel').innerHTML=`🚚 <strong>${c}</strong> · $${cost} flat rate · ${h} handling`;
+}
+function togglePromoGen(){
+  const on=document.getElementById('f_promo_gen').checked;
+  document.getElementById('promoGenCard').classList.toggle('on',on);
+  document.getElementById('promoGenBody').style.display=on?'block':'none';
+}
+function setStatus(msg,type){
+  const el=document.getElementById('statusBar');el.textContent=msg;el.className='status show '+type;
+  if(type==='success')setTimeout(()=>el.classList.remove('show'),4000);
+}
+function updateListBtn(){
+  const has=!!getKey('etok');
+  document.getElementById('listBtn').disabled=!has;
+  document.getElementById('listNote').textContent=has?'✅ Ready to post!':'eBay API token required — add in Settings';
+}
+
+// ── CONNECTION TEST ──
+async function testConnection(){
+  const key=getKey('anth');
+  if(!key){setStatus('⚠️ No API key found — add it in Settings first.','error');return;}
+  setStatus('🔌 Testing API connection…','info');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
+    });
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message);
+    setStatus('✅ API connection works! Key is valid and billing is active.','success');
+  }catch(e){
+    setStatus('❌ API connection failed: '+e.message,'error');
+  }
+}
+
+// ── TEST MODE ──
+function loadTestData(){
+  const L={
+    category_key:'tops',category:'Activewear Tops',
+    category_breadcrumb:'Clothing, Shoes & Accessories > Men > Men\'s Clothing > Activewear',
+    title:'Nike Dri-FIT Pullover Hoodie Mens L Gray Long Sleeve Lightweight Sweatshirt',
+    condition:'Pre-owned - Good',
+    condition_desc:'Pre-owned condition! Please see all photos for condition as all flaws will be shown throughout the photos! Please review the measurements provided in the photos. It is best to compare our listing\'s measurements to a similar article of clothing in your closet to ensure a proper fit!',
+    description:'Nike Dri-FIT Pullover Hoodie Mens L Gray Long Sleeve Lightweight Sweatshirt\n\nPre-owned condition! Please see all photos for condition as all flaws will be shown throughout the photos! Please review the measurements provided in the photos. It is best to compare our listing\'s measurements to a similar article of clothing in your closet to ensure a proper fit!\n\nShips USPS Ground Advantage!',
+    suggested_price:24.99,f_item_origin:'China',
+    s_brand:'Nike',s_color:'Gray',s_dept:'Men',s_size_type:'Regular',s_size:'L',s_type:'Athletic',
+    s_style:'Pullover',s_activity:'Running, Training',s_features:'Dri-FIT, Moisture Wicking',
+    s_product_line:'Dri-FIT',s_sleeve_len:'Long Sleeve',s_closure:'Pullover',s_sleeve_type:'Casual Sleeve',
+    s_origin:'China',s_neckline:'Crew',s_material:'Polyester',s_pattern:'Solid',s_fabric_type:'Knit',
+    s_fit:'Regular',s_fabric_wash:'Light',s_theme:'Sports',s_occasion:'Activewear',s_accents:'Logo',
+    s_season:'All Season',s_care:'Machine Washable',s_vintage:'No',s_handmade:'No'
+  };
+  renderSpecs(L.category_key,L);
+  sv('f_title',L.title);titleCC();
+  sv('f_condition',L.condition);
+  sv('f_cond_desc',L.condition_desc);ccu('condCC',L.condition_desc);
+  sv('f_desc',L.description);ccu('descCC',L.description);
+  sv('f_item_origin',L.f_item_origin);
+  sv('f_price',parseFloat(L.suggested_price).toFixed(2));
+  document.getElementById('catText').textContent=L.category+' — '+L.category_breadcrumb;
+  document.getElementById('recPrice').textContent='$'+L.suggested_price;
+  document.getElementById('priceRec').style.display='block';
+  updateListBtn();
+  setStatus('🧪 Test data loaded! Scroll down to review.','success');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── AI GENERATE ──
+async function generateListing(){
+  const key=getKey('anth');
+  if(!key){setStatus('⚠️ Add your Anthropic API key in Settings first.','error');return;}
+  if(!photosAI.length){setStatus('⚠️ Upload at least one photo to the 🤖 AI Analysis box first.','error');return;}
+  const btn=document.getElementById('genBtn');
+  btn.disabled=true;btn.innerHTML='<div class="spin"></div><span>Analyzing…</span>';
+  setStatus('🤖 Analyzing photos — detecting category and filling all fields…','info');
+
+  const compressed=await Promise.all(photosAI.slice(0,6).map(p=>new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const scale=Math.min(1,1200/Math.max(img.width,img.height));
+      const canvas=document.createElement('canvas');
+      canvas.width=img.width*scale;canvas.height=img.height*scale;
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      resolve(canvas.toDataURL('image/jpeg',0.75));
+    };
+    img.src=p.dataUrl;
+  })));
+  const imgs=compressed.map(dataUrl=>({type:'image',source:{type:'base64',media_type:'image/jpeg',data:dataUrl.split(',')[1]}}));
+
+  const prompt=`You are an expert eBay clothing & shoes reseller. Analyze all photos carefully including any visible tags. Return ONLY valid JSON — no markdown, no backticks, no extra text.
+
+REQUIRED fields (always include):
+- "category_key": "tops"|"bottoms"|"shoes"|"outerwear"|"accessories"
+- "category": human-readable eBay category e.g. "Activewear Tops"
+- "category_breadcrumb": e.g. "Clothing, Shoes & Accessories > Men > Men's Clothing > Activewear"
+- "title": [NWT ONLY if New with tags] Brand + ItemType + Gender + Size + Color + KeyDetails. Max 80 chars. No punctuation except hyphens.
+- "condition": "New with tags"|"New without tags"|"Pre-owned - Excellent"|"Pre-owned - Good"|"Pre-owned - Fair"
+- "condition_desc": "Pre-owned condition! Please see all photos for condition as all flaws will be shown throughout the photos! Please review the measurements provided in the photos. It is best to compare our listing's measurements to a similar article of clothing in your closet to ensure a proper fit!"
+- "description": Title on first line. Then condition paragraph. Then: "Ships USPS Ground Advantage!"
+- "suggested_price": number only
+- "f_item_origin": country of origin from care tag
+
+ITEM SPECIFICS by category — only include fields with detected values:
+
+TOPS: s_brand, s_color, s_dept, s_size_type, s_size, s_type, s_style, s_activity, s_features, s_product_line, s_sleeve_len, s_closure, s_sleeve_type, s_origin, s_neckline, s_material, s_pattern, s_fabric_type, s_fit, s_fabric_wash, s_theme, s_model, s_occasion, s_accents, s_season, s_collar, s_care, s_vintage, s_handmade
+BOTTOMS: s_brand, s_color, s_dept, s_size_type, s_waist, s_inseam, s_type, s_style, s_rise, s_leg_style, s_closure, s_material, s_pattern, s_fit, s_fabric_type, s_features, s_activity, s_origin, s_occasion, s_season, s_accents, s_care, s_model, s_vintage
+SHOES: s_brand, s_color, s_dept, s_size, s_width, s_type, s_style, s_upper_material, s_toe_style, s_heel_type, s_heel_height, s_closure, s_sole_material, s_activity, s_features, s_pattern, s_origin, s_occasion, s_season, s_care, s_model, s_vintage
+OUTERWEAR: s_brand, s_color, s_dept, s_size_type, s_size, s_type, s_coat_type, s_closure, s_lining, s_hood, s_fill, s_material, s_pattern, s_features, s_fit, s_activity, s_origin, s_occasion, s_season, s_care, s_model, s_vintage
+ACCESSORIES: s_brand, s_color, s_dept, s_type, s_size, s_material, s_pattern, s_style, s_features, s_occasion, s_season, s_accents, s_origin, s_care, s_model, s_vintage`;
+
+  try{
+    const fetchPromise=fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1800,messages:[{role:'user',content:[...imgs,{type:'text',text:prompt}]}]})
+    });
+    const timeoutPromise=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Request timed out — try with fewer photos')),60000));
+    const res=await Promise.race([fetchPromise,timeoutPromise]);
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message);
+    let raw=data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    const L=JSON.parse(raw);
+    const catKey=L.category_key||detectCatKey(L.category);
+    renderSpecs(catKey,L);
+    sv('f_title',L.title);titleCC();
+    sv('f_condition',L.condition);
+    sv('f_cond_desc',L.condition_desc);ccu('condCC',L.condition_desc);
+    sv('f_desc',L.description);ccu('descCC',L.description);
+    sv('f_item_origin',L.f_item_origin);
+    if(L.category)document.getElementById('catText').textContent=L.category+(L.category_breadcrumb?' — '+L.category_breadcrumb:'');
+    if(L.suggested_price){sv('f_price',parseFloat(L.suggested_price).toFixed(2));document.getElementById('recPrice').textContent='$'+L.suggested_price;document.getElementById('priceRec').style.display='block';}
+    updateListBtn();
+    setStatus('✅ Done! Scroll down to review — edit anything, then hit List on eBay.','success');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(e){
+    setStatus('❌ Error: '+e.message,'error');
+  }finally{
+    btn.disabled=false;btn.innerHTML='<span>✨ Generate Listing</span>';
+  }
+}
+
+// ── COPY ──
+function copyListing(){
+  const g=id=>{const el=document.getElementById(id);return el?el.value:'';};
+  const specIds=['s_brand','s_color','s_dept','s_size','s_size_type','s_waist','s_inseam','s_material','s_style','s_sleeve_len','s_neckline','s_closure','s_fit','s_origin','s_care','s_activity','s_features','s_pattern','s_rise','s_leg_style','s_width','s_upper_material','s_coat_type','s_hood','s_lining'];
+  const labels={s_brand:'Brand',s_color:'Color',s_dept:'Department',s_size:'Size',s_size_type:'Size Type',s_waist:'Waist',s_inseam:'Inseam',s_material:'Material',s_style:'Style',s_sleeve_len:'Sleeve Length',s_neckline:'Neckline',s_closure:'Closure',s_fit:'Fit',s_origin:'Country of Origin',s_care:'Garment Care',s_activity:'Activity',s_features:'Features',s_pattern:'Pattern',s_rise:'Rise',s_leg_style:'Leg Style',s_width:'Width',s_upper_material:'Upper Material',s_coat_type:'Coat Type',s_hood:'Hood',s_lining:'Lining'};
+  const specLines=specIds.map(id=>{const v=g(id);return v?`${labels[id]}: ${v}`:null;}).filter(Boolean).join('\n');
+  const txt=`TITLE:\n${g('f_title')}\n\nCATEGORY: ${document.getElementById('catText').textContent}\nCONDITION: ${g('f_condition')}\n\nCONDITION DESCRIPTION:\n${g('f_cond_desc')}\n\nITEM SPECIFICS:\n${specLines}\n\nDESCRIPTION:\n${g('f_desc')}\n\nPRICE: $${g('f_price')}\nSHIPPING: ${g('f_carrier')} — $${g('f_ship_cost')} flat\nPROMO: ${document.getElementById('f_promo_gen').checked?g('f_promo_pct')+'%':'None'}`;
+  navigator.clipboard.writeText(txt).then(()=>setStatus('📋 Copied to clipboard!','success'));
+}
+
+// ── POST ──
+function postToEbay(){setStatus('📡 eBay posting activates once your API keys are connected!','info');}
+
+// ── RESET ──
+function resetAll(){
+  if(!confirm('Start a new listing? This will clear everything.'))return;
+  photosAI=[];photosListing=[];
+  renderPhotos('ai');renderPhotos('listing');
+  document.querySelectorAll('#page-create input[type=text],#page-create input[type=number],#page-create textarea').forEach(el=>el.value='');
+  document.querySelectorAll('#page-create select').forEach(el=>el.selectedIndex=0);
+  document.getElementById('f_qty').value=1;
+  document.getElementById('f_ship_cost').value=6.50;
+  document.getElementById('f_promo_pct').value=5;
+  document.getElementById('priceRec').style.display='none';
+  document.getElementById('specsContainer').innerHTML='<div class="empty-specs">📸 Upload photos and click <strong>Generate Listing</strong> — fields appear based on detected category.</div>';
+  document.getElementById('catBadge').style.display='none';
+  document.getElementById('catText').textContent='AI will detect from photos';
+  titleCC();updateShipLabel();
+  setStatus('✅ Ready for a new listing!','success');
+  window.scrollTo(0,0);
+}
+
+// ── SETTINGS ──
+function showPage(p,btn){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.hdr-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  if(p==='settings')loadSettingsUI();
+  window.scrollTo(0,0);
+}
+function getKey(k){return localStorage.getItem('ebt_'+k)||'';}
+function saveKey(k){const v=document.getElementById('s_'+k).value.trim();if(!v)return;localStorage.setItem('ebt_'+k,v);updateDots();updateListBtn();setStatus('Key saved!','success');}
+function saveDefaults(){
+  ['carrier','cost','promo','returns','zip'].forEach(k=>{const el=document.getElementById('sd_'+k);if(el)localStorage.setItem('ebt_d_'+k,el.value);});
+  applyDefaults();setStatus('Defaults saved!','success');
+}
+function applyDefaults(){
+  const m={carrier:'f_carrier',cost:'f_ship_cost',promo:'f_promo_pct'};
+  Object.entries(m).forEach(([dk,fk])=>{const v=localStorage.getItem('ebt_d_'+dk),el=document.getElementById(fk);if(v&&el)el.value=v;});
+  updateShipLabel();
+}
+function loadSettingsUI(){
+  ['anth','eid','esec','etok'].forEach(k=>{const el=document.getElementById('s_'+k);if(el&&getKey(k))el.value=getKey(k);});
+  ['carrier','cost','promo','returns','zip'].forEach(k=>{const el=document.getElementById('sd_'+k);const v=localStorage.getItem('ebt_d_'+k);if(el&&v)el.value=v;});
+  updateDots();
+}
+function updateDots(){['anth','eid','esec','etok'].forEach(k=>{const d=document.getElementById('dot_'+k);if(d)d.className='dot '+(getKey(k)?'g':'r');});}
+
+// ── INIT ──
+applyDefaults();updateDots();updateListBtn();
+</script>
+</body>
+</html>
